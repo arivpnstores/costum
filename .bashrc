@@ -36,26 +36,24 @@ fi
 clear
 figlet "VPS MANAGER" | lolcat
 echo -e "╔═══════════// \e[96mMENU UTAMA\e[0m //══════════╗"
-echo -e "║ 1) Menu Tunneling"
-echo -e "║ 2) Menu ZIVPN UDP"
-echo -e "║ 3) Speedtest VPS"
-echo -e "║ 4) Welcome ARISCTUNNEL V4"
-echo -e "║ 5) Welcome POTATO"
+echo -e "║ 1) Welcome ARISCTUNNEL V4"
+echo -e "║ 2) Menu ARISCTUNNEL V4"
+echo -e "║ 3) Menu ZIVPN UDP"
+echo -e "║ 4) Speedtest VPS"
 echo -e "║ 0) Exit Terminal"
 echo -e "╚═════════════════════════════════════╝"
 read -p "Pilih nomor: " pilih
 
 case $pilih in
-  1) menu ;;
-  2) apt update -y && apt install screen ufw ruby lolcat curl wget python3-pip -y \
+  1) welcome ;;
+  2) menu ;;
+  3) apt update -y && apt install screen ufw ruby lolcat curl wget python3-pip -y \
      && wget -q https://raw.githubusercontent.com/arivpnstores/udp-zivpn/main/install.sh -O /usr/local/bin/zivpn-manager \
      && chmod +x /usr/local/bin/zivpn-manager \
      && /usr/local/bin/zivpn-manager ;;
-  3) wget https://raw.githubusercontent.com/arivpnstores/v4/main/Cdy/speedtest -O /usr/bin/speedtest \
+  4) wget https://raw.githubusercontent.com/arivpnstores/v4/main/Cdy/speedtest -O /usr/bin/speedtest \
      && chmod +x /usr/bin/speedtest \
      && /usr/bin/speedtest ;;
-  4) welcome ;;
-  5) desain p0t4t0 ;;
   0) exit ;;
   *) echo "Pilihan tidak valid!" ;;
 esac
