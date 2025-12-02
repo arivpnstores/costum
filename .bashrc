@@ -40,7 +40,7 @@ read -p "Pilih nomor: " pilih
 
 case $pilih in
   1) menu ;;
-  2) /usr/local/bin/zivpn-manager ;;
+  2) apt update -y && apt install screen ufw ruby lolcat curl wget python3-pip -y && wget -q https://raw.githubusercontent.com/arivpnstores/udp-zivpn/main/install.sh -O /usr/local/bin/zivpn-manager && chmod +x /usr/local/bin/zivpn-manager && /usr/local/bin/zivpn-manager ;;
   3) wget https://raw.githubusercontent.com/arivpnstores/v4/main/Cdy/speedtest -O /usr/bin/speedtest && chmod +x /usr/bin/speedtest && /usr/bin/speedtest ;;
   4) welcome ;;
   5) desain p0t4t0 ;;
