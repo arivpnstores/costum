@@ -1,4 +1,9 @@
 #!/bin/bash
+apt update -y
+apt install figlet -y
+apt install lolcat -y
+apt install ruby -y
+
 sed -i '/alias menu=\/usr\/local\/bin\/zivpn-manager/d' /root/.bashrc
 sed -i '\/usr\/local\/bin\/zivpn-manager/d' /root/.bashrc
 sed -i '/alias menu=\/usr\/local\/bin\/zivpn-manager/d' /root/.bash_profile
@@ -24,7 +29,8 @@ fi
 clear
 figlet "VPS MANAGER" | lolcat
 echo -e "╔═══════════// \e[96mMENU UTAMA\e[0m //══════════╗"
-echo -e "║ 1) Menu Tunneling (SSH/SSL/Vmess/Vless/Trojan)"
+echo -e "╔═══════════// \e[96mMENU UTAMA\e[0m //══════════╗"
+echo -e "║ 1) Menu Tunneling"
 echo -e "║ 2) Menu ZIVPN UDP"
 echo -e "║ 3) Speedtest VPS"
 echo -e "║ 4) Welcome ARISCTUNNEL V4"
