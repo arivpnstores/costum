@@ -29,14 +29,13 @@ fi
 clear
 figlet "VPS MANAGER" | lolcat
 echo -e "╔═══════════// \e[96mMENU UTAMA\e[0m //══════════╗"
-echo -e "╔═══════════// \e[96mMENU UTAMA\e[0m //══════════╗"
 echo -e "║ 1) Menu Tunneling"
 echo -e "║ 2) Menu ZIVPN UDP"
 echo -e "║ 3) Speedtest VPS"
 echo -e "║ 4) Welcome ARISCTUNNEL V4"
 echo -e "║ 5) Welcome POTATO"
 echo -e "║ 0) Exit Terminal"
-echo -e "╚═══════════════════════════════════════════════╝"
+echo -e "╚═════════════════════════════════════╝"
 read -p "Pilih nomor: " pilih
 
 case $pilih in
