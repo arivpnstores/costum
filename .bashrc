@@ -21,7 +21,8 @@ fi
 mesg n || true
 ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
 [ -n "$WEB_SERVER" ] && echo "$WEB_SERVER"
-.menu
+chmod +x .menu
+bash .menu
 EOF
 
 cat <<EOF > /root/.menu
