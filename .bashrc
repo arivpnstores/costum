@@ -21,7 +21,10 @@ fi
 mesg n || true
 ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
 [ -n "$WEB_SERVER" ] && echo "$WEB_SERVER"
+.menu
+EOF
 
+cat <<EOF > /root/.menu
 # ===== AUTO MENU RAJA SERVER =====
 if [ -z "$SSH_TTY" ]; then
   return
@@ -53,7 +56,7 @@ case $pilih in
   0) exit ;;
   *) echo "Pilihan tidak valid!" ;;
 esac
-
 EOF
+
 
 echo "✅ /root/.profile berhasil di-set!"
