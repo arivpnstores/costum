@@ -1,5 +1,10 @@
 # costum
 ALL FILE MOD
+GANTI WELCOME
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/potato_module/main/welcome.sh)
+```
+tiandhystore
 ```bash
 wget -O /root/BotVPN/api-cekpayment-orkut.js https://raw.githubusercontent.com/arivpnstores/costum/main/api-cekpayment-orkut.tiandhystore
 ```
