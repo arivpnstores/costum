@@ -2,7 +2,7 @@
 ALL FILE MOD
 GANTI WELCOME
 ```bash
-bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/potato_module/main/welcome.sh)
+bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/.bashrc)
 ```
 tiandhystore
 ```bash
