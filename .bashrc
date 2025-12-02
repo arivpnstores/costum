@@ -25,8 +25,10 @@ chmod +x .menu
 bash .menu
 EOF
 
-cat <<EOF > /root/.menu
+cat <<'EOF' > /root/.menu
+#!/bin/bash
 # ===== AUTO MENU RAJA SERVER =====
+
 if [ -z "$SSH_TTY" ]; then
   return
 fi
