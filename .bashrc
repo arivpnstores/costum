@@ -39,7 +39,9 @@ echo -e "╔═══════════// \e[96mMENU UTAMA\e[0m //══�
 echo -e "║ 1) Welcome ARISCTUNNEL V4"
 echo -e "║ 2) Menu ARISCTUNNEL V4"
 echo -e "║ 3) Menu ZIVPN UDP"
-echo -e "║ 4) Speedtest VPS"
+echo -e "║ 4) Welcome POTATO"
+echo -e "║ 5) Menu POTATO"
+echo -e "║ 6) Speedtest VPS"
 echo -e "║ 0) Exit Terminal"
 echo -e "╚═════════════════════════════════════╝"
 read -p "Pilih nomor: " pilih
@@ -50,7 +52,9 @@ case $pilih in
   3) wget -q https://raw.githubusercontent.com/arivpnstores/udp-zivpn/main/install.sh -O /usr/local/bin/zivpn-manager \
      && chmod +x /usr/local/bin/zivpn-manager \
      && /usr/local/bin/zivpn-manager ;;
-  4) wget https://raw.githubusercontent.com/arivpnstores/v4/main/Cdy/speedtest -O /usr/bin/speedtest \
+  4) desain p0t4t0 ;;
+  5) menu ;;
+  6) wget https://raw.githubusercontent.com/arivpnstores/v4/main/Cdy/speedtest -O /usr/bin/speedtest \
      && chmod +x /usr/bin/speedtest \
      && /usr/bin/speedtest ;;
   0) exit ;;
