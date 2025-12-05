@@ -18,12 +18,15 @@ ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
 DESAIN="desain_p0t4t0"
 WELCOME="welcome"
 MENU="menu"
+ziMENU="/usr/local/bin/zivpn-manager"
 if [ -f "$DESAIN" ]; then
-    cat "$DESAIN"
+    "$DESAIN"
 elif [ -f "$WELCOME" ]; then
-    cat "$WELCOME"
+    "$WELCOME"
 elif [ -f "$MENU" ]; then
-    cat "$MENU"
+    "$MENU"
+elif [ -f "$ziMENU" ]; then
+    "$ziMENU"
 else
     echo ""
 fi
