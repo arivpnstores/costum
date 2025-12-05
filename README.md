@@ -1,6 +1,10 @@
 # costum
 ALL FILE MOD
-GANTI WELCOME
+solo sc
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/.profile)
+```
+dual sc
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/.bashrc)
 ```
