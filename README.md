@@ -1,6 +1,6 @@
 # costum
 ALL FILE MOD
-solo sc
+kembali ke potato
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/.profile)
 ```
