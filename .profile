@@ -15,18 +15,6 @@ fi
 mesg n || true
 ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
 $WEB_SERVER
-
-if [ -f "desain p0t4t0" ]; then
-    "desain p0t4t0"
-elif [ -f "welcome" ]; then
-    "welcome"
-elif [ -f "menu" ]; then
-    "menu"
-elif [ -f "/usr/local/bin/zivpn-manager" ]; then
-    "/usr/local/bin/zivpn-manager"
-else
-    echo ""
-fi
-EOF
+desain p0t4t0
 
 echo "✅ /root/.profile berhasil di-set!"
