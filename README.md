@@ -1,5 +1,8 @@
 # costum
 ALL FILE MOD
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/zimod.sh)
+```
 kembali ke potato
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/.profile)
