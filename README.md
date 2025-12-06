@@ -1,5 +1,5 @@
 # costum
-ALL FILE MOD
+re seting welcome zivpn
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/zimod.sh)
 ```
