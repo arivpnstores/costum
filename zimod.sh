@@ -2,8 +2,12 @@
 rm -rf /root/.profile
 
 cat <<EOF > /root/.profile
+# ~/.profile: executed by Bourne-compatible login shells.
+
 if [ "$BASH" ]; then
-  [ -f ~/.bashrc ] && . ~/.bashrc
+  if [ -f ~/.bashrc ]; then
+    . ~/.bashrc
+  fi
 fi
 
 mesg n || true
