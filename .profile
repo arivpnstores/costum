@@ -11,6 +11,7 @@ cat <<EOF > /root/.profile
 if [ "$BASH" ]; then
   [ -f ~/.bashrc ] && . ~/.bashrc
 fi
+EOF
 
 mesg n || true
 ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
