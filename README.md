@@ -1,4 +1,8 @@
 # costum
+LOADBALANCE DNS SERVER
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/set-dns.sh)
+```
 re seting welcome zivpn
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/zimod.sh)
