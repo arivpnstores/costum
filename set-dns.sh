@@ -12,8 +12,5 @@ nameserver 1.1.1.1
 nameserver 9.9.9.9
 EOF
 
-echo "🔒 Mengunci resolv.conf agar tidak berubah..."
-chattr +i /etc/resolv.conf 2>/dev/null
-
 echo "✅ DNS berhasil diatur:"
 cat /etc/resolv.conf
