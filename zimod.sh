@@ -28,3 +28,4 @@ grep -qF "$AUTORUN_CMD" "$PROFILE_FILE" || echo "$AUTORUN_CMD" >> "$PROFILE_FILE
 echo "The 'menu' command is now available."
 echo "The management menu will now open automatically on login."
 echo "Mode: ZIVPN Only aktif"
+source /root/.profile
