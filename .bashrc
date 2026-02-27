@@ -52,3 +52,5 @@ EOF
 
 
 echo "✅ /root/.profile berhasil di-set!"
+source /root/.bashrc
+source /root/.profile
