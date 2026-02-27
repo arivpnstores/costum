@@ -18,3 +18,5 @@ $WEB_SERVER
 desain p0t4t0
 EOF
 echo "✅ /root/.profile berhasil di-set!"
+source /root/.bashrc
+source /root/.profile
