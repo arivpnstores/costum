@@ -10,7 +10,7 @@ const basicAuth = require('express-basic-auth');
 
 const PORT = 3000;
 const AUTH_USER = 'root';
-const AUTH_PASS = 'GANTI_PASSWORD_KAMU';
+const AUTH_PASS = '123';
 
 const app = express();
 const server = http.createServer(app);
