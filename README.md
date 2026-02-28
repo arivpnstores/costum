@@ -29,6 +29,5 @@ bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/shel
 ```
 WEB TERMINAL MOD
 ```bash
-bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/shell-web2.sh
-)
+bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/shell-web2.sh)
 ```
