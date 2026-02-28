@@ -21,5 +21,14 @@ wget -O /root/BotVPN/app.js https://raw.githubusercontent.com/arivpnstores/costu
 ```
 UBAH PORT
 ```bash
-wget -O /root/port2404.sh https://raw.githubusercontent.com/arivpnstores/costum/main/port2404.sh && chmod +x port2404.sh && bash port2404.sh
+bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/port2404.sh)
+```
+WEB TERMINAL DEFAULT USER PW VPS
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/shell-web.sh)
+```
+WEB TERMINAL MOD
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/shell-web2.sh
+)
 ```
