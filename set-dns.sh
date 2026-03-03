@@ -1,5 +1,5 @@
 #!/bin/bash
-
+chattr -i /etc/sysctl.conf
 echo "🔧 Setting & Lock DNS..."
 
 # Tulis DNS
