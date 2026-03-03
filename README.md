@@ -1,5 +1,5 @@
 # costum
-DNS CLOUDFLARE
+MULTI DNS
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/set-dns.sh)
 ```
