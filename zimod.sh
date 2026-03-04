@@ -12,13 +12,14 @@ fi
 
 mesg n || true
 ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
-$WEB_SERVER
-menu
+
+# AUTO RUN ZIVPN MENU (DIRECT EXEC)
+if [ -x /usr/local/bin/zivpn-manager ]; then
+  /usr/local/bin/zivpn-manager
+fi
 EOF
 
 PROFILE_FILE="/root/.bashrc"
-[ -f "/root/.bash_profile" ] && PROFILE_FILE="/root/.bash_profile"
-
 ALIAS_CMD="alias menu='/usr/local/bin/zivpn-manager'"
 AUTORUN_CMD="/usr/local/bin/zivpn-manager"
 
