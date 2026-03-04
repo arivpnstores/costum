@@ -3,11 +3,11 @@ MULTI DNS
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/set-dns.sh)
 ```
-re seting welcome zivpn
+welcome zivpn
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/zimod.sh)
 ```
-kembali ke potato
+welcome potato
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/.profile)
 ```
