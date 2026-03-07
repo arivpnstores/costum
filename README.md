@@ -27,7 +27,3 @@ WEB TERMINAL DEFAULT USER PW VPS
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/shell-web.sh)
 ```
-WEB TERMINAL GANTI PW VPS
-```bash
-bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/shell-web2.sh)
-```
