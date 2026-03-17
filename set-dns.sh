@@ -52,7 +52,7 @@ sysctl -p > /dev/null 2>&1
 echo "✅ SYSCTL OPTIMIZED (silent)"
 
 # Lock
-chattr +i /etc/resolv.conf
-chattr +i /etc/sysctl.conf
+chattr +i /etc/resolv.conf 2>/dev/null || true
+chattr +i /etc/sysctl.conf 2>/dev/null || true
 
 echo "🔥 VPS SIAP TEMPUR!"
