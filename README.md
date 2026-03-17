@@ -5,7 +5,7 @@ rm -f /etc/resolv.conf
 echo "nameserver 1.1.1.1" > /etc/resolv.conf
 echo "nameserver 8.8.8.8" >> /etc/resolv.conf
 ```
-MULTI DNS
+LOCKING DNS
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/set-dns.sh)
 ```
