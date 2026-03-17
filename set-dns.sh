@@ -2,11 +2,11 @@
 
 echo "🚀 OPTIMASI VPS MAX PERFORMANCE"
 
-# Unlock dulu
+# Unlock dulu (silent)
 chattr -i /etc/resolv.conf 2>/dev/null
 chattr -i /etc/sysctl.conf 2>/dev/null
 
-# DNS optimal (fast & stabil)
+# DNS (silent)
 cat <<EOF > /etc/resolv.conf
 nameserver 1.1.1.1
 nameserver 8.8.8.8
@@ -14,7 +14,7 @@ EOF
 
 echo "✅ DNS OK"
 
-# SYSCTL SUPER OPTIMIZED
+# SYSCTL (tanpa output ke layar)
 cat <<EOF >> /etc/sysctl.conf
 
 # BBR
@@ -46,11 +46,12 @@ net.ipv4.tcp_tw_reuse=1
 
 EOF
 
-sysctl -p
+# Apply tanpa output
+sysctl -p > /dev/null 2>&1
 
-echo "✅ SYSCTL SUPER OPTIMIZED"
+echo "✅ SYSCTL OPTIMIZED (silent)"
 
-# Lock biar tidak diubah sistem
+# Lock
 chattr +i /etc/resolv.conf
 chattr +i /etc/sysctl.conf
 
