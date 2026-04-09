@@ -7,7 +7,7 @@ echo "nameserver 8.8.8.8" >> /etc/resolv.conf
 ```
 LOCKING DNS
 ```bash
-bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/set-dns.sh)
+bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/set-ipv4-dns.sh)
 ```
 welcome zivpn
 ```bash
