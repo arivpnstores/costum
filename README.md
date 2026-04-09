@@ -1,5 +1,5 @@
 # costum
-DNS SET LANGSUNG  
+DNS SET + IPV4 ONLY LANGSUNG  
 ```bash
 rm -f /etc/resolv.conf
 echo "nameserver 1.1.1.1" > /etc/resolv.conf
@@ -8,7 +8,7 @@ echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
 echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.conf
 sysctl -p
 ```
-LOCKING DNS
+LOCKING DNS + IPV4 ONLY
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/set-ipv4-dns.sh)
 ```
