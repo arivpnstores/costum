@@ -28,8 +28,8 @@ fi
 clear
 echo -e "DUAL SCRIPT VPS MANAGER"
 echo -e "╔═══════════// \e[96mMENU UTAMA\e[0m //══════════╗"
-echo -e "║ 1) Welcome ARISCTUNNEL V4"
-echo -e "║ 2) Menu ARISCTUNNEL V4"
+echo -e "║ 1) Welcome ARI SC TUNNEL"
+echo -e "║ 2) Menu ARI SC TUNNEL"
 echo -e "║ 3) Menu ZIVPN UDP"
 echo -e "║ 4) Speedtest VPS"
 echo -e "║ 0) Exit Terminal"
