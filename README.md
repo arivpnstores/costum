@@ -32,7 +32,7 @@ app.js zivpn no credit title
 ```bash
 wget -O /root/BotZiVPN/app.js https://raw.githubusercontent.com/arivpnstores/costum/main/app2.js && pm2 restart all
 ```
-UBAH PORT
+UBAH PORT LOGIN VPS
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/port2404.sh)
 ```
