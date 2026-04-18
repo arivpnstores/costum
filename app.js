@@ -140,21 +140,21 @@ async function saveTrialAccess(userId) {
 
 
 const fs = require('fs');
-const vars = JSON.parse(fs.readFileSync('./.vars.json', 'utf8'));
+const vars = JSON.parse(fs.readFileSync(path.join(__dirname, '.vars.json'), 'utf8'));
 
 const BOT_TOKEN = vars.BOT_TOKEN;
 const port = vars.PORT || 6969;
 const ADMIN = vars.USER_ID; 
 const NAMA_STORE = vars.NAMA_STORE || '@ARI_VPN_STORE';
-const DATA_QRIS = vars.DATA_QRIS;
 const GROUP_ID = vars.GROUP_ID;
-const APIKEY = vars.AUTH_PAYMET_GETWAY;       // apikey gateway
-const GOPAY_API = "https://gopay.autoftbot.com/api/backend/transactions";
+// V1 GOPAY
 const GOPAY_KEY = vars.GOPAY_KEY;
-const MERCHANT_ID = vars.MERCHANT_ID;
+// V2 ORKUT
+const AUTH_USER = vars.AUTH_USERNAME_ORKUT;  // username orderkuota
+const AUTH_TOKEN = vars.AUTH_TOKEN_ORKUT;    // token orderkuota
 
 const bot = new Telegraf(BOT_TOKEN);
-let ADMIN_USERNAME = '@ARI_VPN_STORE';
+let ADMIN_USERNAME = vars.NAMA_STORE;
 const adminIds = ADMIN;
 logger.info('Bot initialized');
 /*
@@ -170,11 +170,12 @@ logger.info('Bot initialized');
   }
 })();
 */
-const db = new sqlite3.Database('./sellvpn.db', (err) => {
+const dbPath = path.join(__dirname, 'sellvpn.db');
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     logger.error('Kesalahan koneksi SQLite3:', err.message);
   } else {
-    logger.info('Terhubung ke SQLite3');
+    logger.info(`Terhubung ke SQLite3: ${dbPath}`);
   }
 });
 
@@ -185,10 +186,24 @@ db.run(`CREATE TABLE IF NOT EXISTS pending_deposits (
   original_amount INTEGER,
   timestamp INTEGER,
   status TEXT,
-  qr_message_id INTEGER
+  qr_message_id INTEGER,
+  transaction_id TEXT,
+  chat_id INTEGER
 )`, (err) => {
   if (err) {
     logger.error('Kesalahan membuat tabel pending_deposits:', err.message);
+  }
+});
+
+db.run(`ALTER TABLE pending_deposits ADD COLUMN transaction_id TEXT`, (err) => {
+  if (err && !err.message.includes('duplicate column')) {
+    logger.error('Gagal menambahkan kolom transaction_id di pending_deposits:', err.message);
+  }
+});
+
+db.run(`ALTER TABLE pending_deposits ADD COLUMN chat_id INTEGER`, (err) => {
+  if (err && !err.message.includes('duplicate column')) {
+    logger.error('Gagal menambahkan kolom chat_id di pending_deposits:', err.message);
   }
 });
 
@@ -293,6 +308,28 @@ db.run(`CREATE TABLE IF NOT EXISTS transactions (
 
 const userState = {};
 logger.info('User state initialized');
+
+function dbRunAsync(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function(err) {
+      if (err) return reject(err);
+      resolve(this);
+    });
+  });
+}
+
+function dbGetAsync(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) return reject(err);
+      resolve(row);
+    });
+  });
+}
+
+async function ensureUserExists(userId) {
+  await dbRunAsync('INSERT OR IGNORE INTO users (user_id) VALUES (?)', [userId]);
+}
 
 bot.command(['start', 'menu'], async (ctx) => {
   logger.info('Start or Menu command received');
@@ -1737,7 +1774,7 @@ bot.action('renew_ssh', async (ctx) => {
 async function startSelectServer(ctx, action, type, page = 0) {
   try {
     const isR = await isUserReseller(ctx.from.id);
-    const query = 'SELECT * FROM Server ORDER BY nama_server ASC';
+    const query = 'SELECT * FROM Server'; // urut di JS, bukan SQL
 
     db.all(query, [], (err, servers) => {
       if (err) {
@@ -1746,28 +1783,33 @@ async function startSelectServer(ctx, action, type, page = 0) {
       }
 
       // ==== FILTER RESSELLER-ONLY ====
-const filteredServers = servers.filter(server => {
-  const isResellerOnly = Number(server.is_reseller_only) === 1;
+      let filteredServers = servers.filter(server => {
+        const isResellerOnly = Number(server.is_reseller_only) === 1;
 
-  // Jika server hanya untuk reseller
-  if (isResellerOnly && !isR) {
-    logger.info(`Menyembunyikan server ${server.nama_server} untuk user biasa ${ctx.from.id}`);
-    return false;
-  }
+        if (isResellerOnly && !isR) {
+          logger.info(`Menyembunyikan server ${server.nama_server} untuk user biasa ${ctx.from.id}`);
+          return false;
+        }
 
-  // Jika server publik dan user adalah reseller (optional: sembunyikan server publik untuk reseller)
-  if (!isResellerOnly && isR) {
-    logger.info(`Menyembunyikan server publik ${server.nama_server} untuk reseller ${ctx.from.id}`);
-    return false;
-  }
+        if (!isResellerOnly && isR) {
+          logger.info(`Menyembunyikan server publik ${server.nama_server} untuk reseller ${ctx.from.id}`);
+          return false;
+        }
 
-  return true;
-});
+        return true;
+      });
 
+      // ==== SORT SERVER TERSEDIA DI DEPAN, PENUH DI BELAKANG ====
+      filteredServers.sort((a, b) => {
+        const aFull = a.total_create_akun >= a.batas_create_akun ? 1 : 0;
+        const bFull = b.total_create_akun >= b.batas_create_akun ? 1 : 0;
+        if (aFull !== bFull) return aFull - bFull; // server penuh terakhir
+        return a.nama_server.localeCompare(b.nama_server); // urut alfabet kalau status sama
+      });
 
       logger.info(`User ${ctx.from.id} melihat ${filteredServers.length} server dari ${servers.length} total`);
 
-      // ==== Pagination & render ====
+      // ==== Pagination ====
       const serversPerPage = 10;
       const totalPages = Math.ceil(filteredServers.length / serversPerPage);
       const currentPage = Math.min(Math.max(page, 0), totalPages - 1);
@@ -1775,16 +1817,33 @@ const filteredServers = servers.filter(server => {
       const end = start + serversPerPage;
       const currentServers = filteredServers.slice(start, end);
 
+      // ==== Keyboard ====
       const keyboard = [];
       for (let i = 0; i < currentServers.length; i += 2) {
         const row = [];
-        row.push({ text: currentServers[i].nama_server, callback_data: `${action}_username_${type}_${currentServers[i].id}` });
-        if (currentServers[i + 1]) {
-          row.push({ text: currentServers[i + 1].nama_server, callback_data: `${action}_username_${type}_${currentServers[i + 1].id}` });
+        const server1 = currentServers[i];
+        const server2 = currentServers[i + 1];
+
+        row.push({
+          text: server1.nama_server + (server1.total_create_akun >= server1.batas_create_akun ? " ⚠️" : ""),
+          callback_data: server1.total_create_akun >= server1.batas_create_akun
+            ? "disabled"
+            : `${action}_username_${type}_${server1.id}`
+        });
+
+        if (server2) {
+          row.push({
+            text: server2.nama_server + (server2.total_create_akun >= server2.batas_create_akun ? " ⚠️" : ""),
+            callback_data: server2.total_create_akun >= server2.batas_create_akun
+              ? "disabled"
+              : `${action}_username_${type}_${server2.id}`
+          });
         }
+
         keyboard.push(row);
       }
 
+      // Navigation
       const navButtons = [];
       if (totalPages > 1) {
         if (currentPage > 0) navButtons.push({ text: '⬅️ Back', callback_data: `navigate_${action}_${type}_${currentPage - 1}` });
@@ -1793,45 +1852,30 @@ const filteredServers = servers.filter(server => {
       if (navButtons.length) keyboard.push(navButtons);
       keyboard.push([{ text: '🔙 Kembali ke Menu Utama', callback_data: 'send_main_menu' }]);
 
-/*
+      // ==== Server List Text ====
       const serverList = currentServers.map(server => {
         const hargaPer30Hari = server.harga * 30;
         const isFull = server.total_create_akun >= server.batas_create_akun;
+
+        // QUOTA
+        const rawQuota = server.quota?.toString().trim();
+        const showQuota = !rawQuota || rawQuota === "0" || rawQuota === ")" ? "Unlimited" : `${rawQuota}GB`;
+
+        // IP LIMIT
+        const rawIP = parseInt(server.iplimit, 10) || 0;
+        const showIP = rawIP === 0 ? 5 : rawIP;
+
         return `🌐 *${server.nama_server}*\n` +
                `💰 Harga per hari: Rp${server.harga}\n` +
                `📅 Harga per 30 hari: Rp${hargaPer30Hari}\n` +
-               `📊 Quota: ${server.quota}GB\n` +
-               `🔢 Limit IP: ${server.iplimit} IP\n` +
-               (isFull ? `⚠️ *Server Penuh*` : `👥 Total Create Akun: ${server.total_create_akun}/${server.batas_create_akun}`);
+               `📊 Quota: ${showQuota}\n` +
+               `🔢 Limit IP: ${showIP} IP\n` +
+               (isFull
+                 ? `⚠️ *Server Penuh*`
+                 : `👥 Total Create Akun: ${server.total_create_akun}/${server.batas_create_akun}`);
       }).join('\n\n');
-*/
 
-const serverList = currentServers.map(server => {
-  const hargaPer30Hari = server.harga * 30;
-  const isFull = server.total_create_akun >= server.batas_create_akun;
-
-  // QUOTA: 0 / kosong / ")" => Unlimited
-  const rawQuota = server.quota?.toString().trim();
-  const showQuota =
-    !rawQuota || rawQuota === "0" || rawQuota === ")"
-      ? "Unlimited"
-      : `${rawQuota}GB`;
-
-  // IP LIMIT: 0 / kosong => 5
-  const rawIP = parseInt(server.iplimit, 10) || 0;
-  const showIP = rawIP === 0 ? 5 : rawIP;
-
-  return `🌐 *${server.nama_server}*\n` +
-         `💰 Harga per hari: Rp${server.harga}\n` +
-         `📅 Harga per 30 hari: Rp${hargaPer30Hari}\n` +
-         `📊 Quota: ${showQuota}\n` +
-         `🔢 Limit IP: ${showIP} IP\n` +
-         (isFull
-           ? `⚠️ *Server Penuh*`
-           : `👥 Total Create Akun: ${server.total_create_akun}/${server.batas_create_akun}`);
-}).join('\n\n');
-
-
+      // ==== Send / Edit Message ====
       if (ctx.updateType === 'callback_query') {
         ctx.editMessageText(`📋 *List Server (Halaman ${currentPage + 1} dari ${totalPages})*\n\n${serverList}`, {
           reply_markup: { inline_keyboard: keyboard },
@@ -3951,7 +3995,9 @@ db.all('SELECT * FROM pending_deposits WHERE status = "pending"', [], (err, rows
       userId: row.user_id,
       timestamp: row.timestamp,
       status: row.status,
-      qrMessageId: row.qr_message_id
+      qrMessageId: row.qr_message_id,
+      transactionId: row.transaction_id,
+      chatId: row.chat_id
     };
   });
   logger.info('Pending deposit loaded:', Object.keys(global.pendingDeposits).length);
@@ -3961,12 +4007,30 @@ function generateRandomNumber(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// ============================
+// EXEC PROMISE
+// ============================
+const execP = (cmd, opts = {}) =>
+  new Promise((resolve, reject) => {
+    exec(cmd, opts, (err, stdout, stderr) => {
+      if (err) {
+        err.stderr = stderr;
+        err.stdout = stdout;
+        return reject(err);
+      }
+      resolve(stdout);
+    });
+  });
+
+// ============================ 
+// PROCESS DEPOSIT (FINAL UPDATE)
+// ============================
 async function processDeposit(ctx, amount) {
   const currentTime = Date.now();
 
   if (currentTime - lastRequestTime < requestInterval) {
     await ctx.editMessageText(
-      '⚠️ *Terlalu banyak permintaan. Silakan tunggu sebentar sebelum mencoba lagi.*',
+      '⚠️ *Terlalu banyak request, tunggu dulu ya.*',
       { parse_mode: 'Markdown' }
     );
     return;
@@ -3977,197 +4041,281 @@ async function processDeposit(ctx, amount) {
   const userId = ctx.from.id;
   const uniqueCode = `user-${userId}-${Date.now()}`;
 
-  const finalAmount = Number(amount) + generateRandomNumber(1, 300);
-  const adminFee = finalAmount - Number(amount);
+  let finalAmount = Number(amount);
+  let adminFee = 0;
 
   try {
-    const urlQr = DATA_QRIS;
-    const auth_apikey = APIKEY;
+    let qrImageUrl = null;
+    let transactionId = null;
+    let qrMessage = null;
 
-    const { exec } = require('child_process');
+    // ======================
+    // GOPAY (NO FEE)
+    // ======================
+    if (vars.PAYMENT === "GOPAY") {
+      finalAmount = Number(amount);
+      adminFee = 0;
 
-    const execP = (cmd, opts = {}) =>
-      new Promise((resolve, reject) => {
-        exec(cmd, opts, (err, stdout, stderr) => {
-          if (err) {
-            err.stderr = stderr;
-            err.stdout = stdout;
-            return reject(err);
-          }
-          resolve(stdout);
-        });
+      const res = await axios.post(
+        "https://api-gopay.sawargipay.cloud/qris/generate",
+        { amount: finalAmount },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GOPAY_KEY}`
+          },
+          timeout: 15000
+        }
+      );
+
+      if (!res.data?.success) {
+        throw new Error("Gagal create QRIS GOPAY");
+      }
+
+      const data = res.data.data;
+
+      transactionId = data.transaction_id;
+      qrImageUrl = data.qr_url;
+
+      if (!qrImageUrl) throw new Error("QR URL kosong");
+
+      // kirim caption + link QR
+      const safeQrUrl = encodeURI(String(qrImageUrl).trim());
+      const caption =
+        `📝 *Detail Pembayaran*\n\n` +
+        `💰 Total: Rp ${finalAmount}\n` +
+        `- Topup: Rp ${amount}\n` +
+        `\n⏱️ Expired: 10 menit\n` +
+        `⚠️ Transfer harus sama persis!\n\n` +
+        `🔗 [Klik QRIS](${safeQrUrl})\n`;
+
+      qrMessage = await ctx.reply(caption, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '❌ Batal', callback_data: `batal_topup_${uniqueCode}` }]
+          ]
+        }
       });
-
-    // ===== CREATE QRIS (CURL -4) =====
-    const createCmd =
-      `curl -4 -sS -L --get "https://api.rajaserver.web.id/gopaymerchat/createpayment" ` +
-      `--data-urlencode "apikey=${auth_apikey}" ` +
-      `--data-urlencode "amount=${finalAmount}" ` +
-      `--data-urlencode "codeqr=${urlQr}"`;
-
-    const out = await execP(createCmd, { maxBuffer: 5 * 1024 * 1024 });
-
-    let get;
-    try {
-      get = JSON.parse(String(out));
-    } catch (e) {
-      throw new Error("Createpayment bukan JSON: " + String(out).slice(0, 300));
     }
 
-    if (get.status !== 'success') {
-      throw new Error('Gagal membuat QRIS: ' + JSON.stringify(get));
+    // ======================
+    // ORKUT (API BARU) - LANGSUNG KIRIM GAMBAR
+    // ======================
+    else if (vars.PAYMENT === "ORKUT") {
+      const res = await axios.get(
+        "https://orkut.rajaserver.web.id/api/qris",
+        {
+          params: {
+            qris_string: vars.DATA_QRIS_ORKUT,
+            amount: Number(amount),
+            format: "json"
+          },
+          timeout: 15000
+        }
+      );
+
+      const data = res.data;
+
+      if (!data || !data.success) throw new Error("Gagal create QRIS ORKUT");
+
+      finalAmount = Number(data.amount);
+      adminFee = Number(data.random_add);
+
+      if (!data.image_data || !data.image_data.includes("base64"))
+        throw new Error("QRIS image invalid");
+
+      transactionId = data.reference;
+
+      // ubah base64 jadi buffer
+      const base64Data = data.image_data.split(',')[1];
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+
+      const caption =
+        `📝 *Detail Pembayaran*\n\n` +
+        `💰 Total: Rp ${finalAmount}\n` +
+        `- Topup: Rp ${amount}\n` +
+        (adminFee > 0 ? `- Admin: Rp ${adminFee}\n` : ``) +
+        `\n⏱️ Expired: 10 menit\n` +
+        `⚠️ Transfer harus sama persis!\n`;
+
+      // kirim QRIS sebagai foto
+    qrMessage = await ctx.replyWithPhoto(
+     { source: imageBuffer },
+     {
+      caption,
+      parse_mode: 'Markdown',
+      reply_markup: {
+      inline_keyboard: [
+        [{ text: '❌ Batal', callback_data: `batal_topup_${uniqueCode}` }]
+      ]
     }
-
-    const qrImageUrl = get.result?.imageqris?.url;
-    if (!qrImageUrl || String(qrImageUrl).includes('undefined')) {
-      throw new Error('URL QRIS tidak valid: ' + String(qrImageUrl));
-    }
-
-// ✅ FIX: bikin URL aman (spasi jadi %20 biar full klik di Telegram)
-const safeQrUrl = encodeURI(String(qrImageUrl).trim());
-
-const caption =
-  `📝 *Detail Pembayaran:*\n\n` +
-  `💰 Jumlah: Rp ${finalAmount}\n` +
-  `- Nominal Top Up: Rp ${amount}\n` +
-  `- Admin Fee : Rp ${adminFee}\n` +
-  `⚠️ *Penting:* Mohon transfer sesuai nominal\n` +
-  `⏱️ Waktu: 60 menit\n\n` +
-  `⚠️ *Catatan:*\n` +
-  `- Pembayaran akan otomatis terverifikasi\n` +
-  `- Jika pembayaran berhasil, saldo akan otomatis ditambahkan\n\n` +
-  `🔗 *Link QR:* [Buka QRIS](${safeQrUrl})\n` +
-  `atau scan QR di bawah ini:\n`;
-
-const qrMessage = await ctx.reply(caption, {
-  parse_mode: 'Markdown',
-  reply_markup: {
-    inline_keyboard: [
-      [{ text: '❌ Batal', callback_data: `batal_topup_${uniqueCode}` }]
-    ]
   }
-});
-
-    try {
-      await ctx.deleteMessage();
-    } catch (e) {
-      logger.error('Gagal menghapus pesan input nominal:', e.message);
+);
+      qrImageUrl = data.image_data.trim(); // untuk checker
     }
+
+    else throw new Error("PAYMENT tidak valid");
+
+    // ======================
+    // SIMPAN MEMORY
+    // ======================
+    if (!global.pendingDeposits) global.pendingDeposits = {};
 
     global.pendingDeposits[uniqueCode] = {
       amount: finalAmount,
-      originalAmount: amount,
+      originalAmount: Number(amount),
       userId,
       timestamp: Date.now(),
       status: 'pending',
-      qrMessageId: qrMessage?.message_id
+      qrMessageId: qrMessage?.message_id,
+      transactionId,
+      chatId: qrMessage?.chat?.id || ctx.chat?.id || userId
     };
 
+    // ======================
+    // SIMPAN DB
+    // ======================
     db.run(
-      `INSERT INTO pending_deposits (unique_code, user_id, amount, original_amount, timestamp, status, qr_message_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [uniqueCode, userId, finalAmount, amount, Date.now(), 'pending', qrMessage?.message_id],
-      (err) => {
-        if (err) logger.error('Gagal insert pending_deposits:', err.message);
-      }
+      `INSERT INTO pending_deposits 
+      (unique_code, user_id, amount, original_amount, timestamp, status, qr_message_id, transaction_id, chat_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        uniqueCode,
+        userId,
+        finalAmount,
+        Number(amount),
+        Date.now(),
+        'pending',
+        qrMessage?.message_id,
+        transactionId,
+        qrMessage?.chat?.id || ctx.chat?.id || userId
+      ]
     );
 
-    delete global.depositState[userId];
-  } catch (error) {
-    logger.error('❌ Kesalahan saat memproses deposit:', {
-      message: error?.message,
-      code: error?.code,
-      stderr: error?.stderr,
-      stack: error?.stack
-    });
+    // bersihin state lama
+    if (global.depositState?.[userId]) delete global.depositState[userId];
 
-    await ctx.reply('❌ Gagal memproses deposit. Coba lagi beberapa saat.', {
-      parse_mode: 'Markdown'
-    });
+    try { await ctx.deleteMessage(); } catch {}
+
+  } catch (error) {
+    console.error("❌ Deposit error:", error.message);
+
+    await ctx.reply(
+      '❌ Gagal membuat QRIS, coba lagi nanti.\n⚠️ Detail: ' + error.message,
+      { parse_mode: 'Markdown' }
+    );
+
+    if (global.depositState?.[ctx.from.id]) delete global.depositState[ctx.from.id];
   }
 }
 
 async function checkQRISStatus() {
-  try {
-    const pendingDeposits = Object.entries(global.pendingDeposits);
+  if (!global.pendingDeposits || Object.keys(global.pendingDeposits).length === 0) return;
 
-    // 🔥 ambil data sekali (lebih hemat request)
-    const res = await axios.post(
-      GOPAY_API,
-      { merchant_id: MERCHANT_ID },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${GOPAY_KEY}`
-        },
-        timeout: 15000
+  const now = Date.now();
+
+  for (const [uniqueCode, deposit] of Object.entries(global.pendingDeposits)) {
+    if (deposit.status !== 'pending') continue;
+
+    try {
+      // EXPIRATION
+      let maxAge = vars.PAYMENT === "GOPAY" ? 15 * 60 * 1000 : 3600 * 1000; // 15 menit vs 1 jam
+      if (now - deposit.timestamp > maxAge) {
+        logger.warn(`EXPIRED ${uniqueCode}`);
+        delete global.pendingDeposits[uniqueCode];
+        db.run('DELETE FROM pending_deposits WHERE unique_code = ?', [uniqueCode]);
+        continue;
       }
-    );
 
-const rawList = res.data?.data?.transactions || [];
-const now = Date.now();
-const maxAge = 60 * 60 * 1000; // 1 jam
-const list = rawList.filter(tx => {
-  const txTime = new Date(tx.time).getTime();
-  return now - txTime <= maxAge;
-});
-
-    logger.info(`📦 Total trx GOPAY: ${list.length}`);
-
-    for (const [uniqueCode, deposit] of pendingDeposits) {
-      if (deposit.status !== 'pending') continue;
-
-      const depositAge = Date.now() - deposit.timestamp;
-
-      // EXPIRED
-      if (depositAge > 60 * 60 * 1000) {
-        try {
-          if (deposit.qrMessageId) {
-            await bot.telegram.deleteMessage(deposit.userId, deposit.qrMessageId);
+      // PROVIDER-SPECIFIC LOGIC
+      if (vars.PAYMENT === "GOPAY") {
+        // Cek status via API GoPay
+        const res = await axios.post(
+          "https://api-gopay.sawargipay.cloud/qris/status",
+          { transaction_id: deposit.transactionId },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${GOPAY_KEY}`
+            },
+            timeout: 15000
           }
+        );
 
-          await bot.telegram.sendMessage(
-            deposit.userId,
-            '❌ *Pembayaran Expired*\n\nSilakan klik Top Up lagi.',
-            { parse_mode: 'Markdown' }
-          );
-        } catch (err) {
-          logger.error('Error delete expired:', err);
+        const data = res.data?.data;
+        if (!data) continue;
+
+        const status = data.transaction_status;
+        logger.info(`🔍 ${uniqueCode} | ${status}`);
+        if (status !== "settlement") continue;
+
+        logger.info(`💰 PEMBAYARAN MASUK ${uniqueCode}`);
+        const success = await processMatchingPaymentAtomic(deposit, data, uniqueCode);
+
+        if (success) {
+          delete global.pendingDeposits[uniqueCode];
+          db.run('DELETE FROM pending_deposits WHERE unique_code = ?', [uniqueCode]);
         }
 
-        delete global.pendingDeposits[uniqueCode];
-        db.run('DELETE FROM pending_deposits WHERE unique_code = ?', [uniqueCode]);
-        continue;
+      } else if (vars.PAYMENT === "ORKUT") {
+        // Cek status via API Orkut
+        const params = new URLSearchParams();
+        params.append('username', AUTH_USER);
+        params.append('token', AUTH_TOKEN);
+        params.append('jenis', 'masuk');
+
+        const res = await axios.post(
+          'https://orkut.rajaserver.web.id/api/orkut/qris-history',
+          params,
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Accept': '*/*'
+            },
+            timeout: 15000
+          }
+        );
+
+        const data = res.data;
+        if (!data?.success || !data.qris_history?.results) {
+          logger.warn(`[QRIS] Response tidak valid ${uniqueCode}`);
+          continue;
+        }
+
+        const list = data.qris_history.results;
+        const normalize = v => Number(String(v || '').replace(/[^\d]/g, '')) || 0;
+        const targetAmount = normalize(deposit.amount);
+
+        const match = list.find(tx => {
+          const kredit = normalize(tx.kredit);
+          const status = String(tx.status || '').toUpperCase();
+          return kredit === targetAmount && status === 'IN';
+        });
+
+        if (!match) {
+          logger.info(`[QRIS] Belum match ${uniqueCode}`);
+          continue;
+        }
+
+        logger.info(`[QRIS] MATCH ${uniqueCode}`);
+        const success = await processMatchingPaymentAtomic(deposit, match, uniqueCode);
+
+        if (success) {
+          logger.info(`[QRIS] SUCCESS ${uniqueCode}`);
+          delete global.pendingDeposits[uniqueCode];
+          db.run('DELETE FROM pending_deposits WHERE unique_code = ?', [uniqueCode]);
+        }
       }
 
-      const target = Number(deposit.amount);
-
-      const found = list.find(tx =>
-        Number(tx.amount) === target &&
-        String(tx.status).toLowerCase() === "settlement"
-      );
-
-      if (!found) {
-        logger.info(`⏳ Pending | ${uniqueCode}`);
-        continue;
-      }
-
-      logger.info(`💰 MATCH | ${uniqueCode} | TRX=${found.id}`);
-
-      const success = await processMatchingPayment(deposit, found, uniqueCode);
-
-      if (success) {
-        logger.info(`✅ Payment success | ${uniqueCode}`);
-
-        delete global.pendingDeposits[uniqueCode];
-        db.run('DELETE FROM pending_deposits WHERE unique_code = ?', [uniqueCode]);
-      }
+    } catch (err) {
+      logger.error(`[QRIS] ERROR ${uniqueCode}: ${err.message}`);
     }
-
-  } catch (error) {
-    logger.error('❌ Error checkQRISStatus:', error?.response?.data || error.message);
   }
 }
+
+// AUTO LOOP
+setInterval(checkQRISStatus, 5000);
 
 function keyboard_abc() {
   const alphabet = 'abcdefghijklmnopqrstuvwxyz';
@@ -4257,6 +4405,127 @@ async function sendPaymentSuccessNotification(userId, deposit, currentBalance) {
   } catch (error) {
     logger.error('Error sending payment notification:', error);
     return false;
+  }
+}
+
+async function processMatchingPaymentAtomic(deposit, matchingTransaction, uniqueCode) {
+  const referenceId = matchingTransaction.reference_id || deposit.transactionId || uniqueCode;
+  const referenceAmount = Number(matchingTransaction.amount || deposit.amount || deposit.originalAmount);
+  const transactionKey = `${referenceId}_${referenceAmount}`;
+
+  if (deposit.status === 'processing') {
+    logger.info(`Transaction ${transactionKey} sedang diproses, skip duplikasi checker.`);
+    return false;
+  }
+
+  deposit.status = 'processing';
+
+  try {
+    await dbRunAsync('BEGIN IMMEDIATE TRANSACTION');
+    await ensureUserExists(deposit.userId);
+
+    const existing = await dbGetAsync(
+      'SELECT id FROM transactions WHERE reference_id = ? AND amount = ?',
+      [referenceId, deposit.originalAmount]
+    );
+
+    if (existing) {
+      await dbRunAsync('ROLLBACK');
+      deposit.status = 'paid';
+      logger.info(`Transaction ${transactionKey} already processed, skipping...`);
+      return false;
+    }
+
+    const updateResult = await dbRunAsync(
+      'UPDATE users SET saldo = saldo + ? WHERE user_id = ?',
+      [deposit.originalAmount, deposit.userId]
+    );
+
+    if (!updateResult.changes) {
+      throw new Error(`User ${deposit.userId} tidak ditemukan saat update saldo.`);
+    }
+
+    await dbRunAsync(
+      'INSERT INTO transactions (user_id, amount, type, reference_id, timestamp) VALUES (?, ?, ?, ?, ?)',
+      [deposit.userId, deposit.originalAmount, 'deposit', referenceId, Date.now()]
+    );
+
+    const user = await dbGetAsync('SELECT saldo FROM users WHERE user_id = ?', [deposit.userId]);
+    if (!user) {
+      throw new Error(`Gagal mengambil saldo terbaru user ${deposit.userId}.`);
+    }
+
+    await dbRunAsync('COMMIT');
+
+    global.processedTransactions.add(transactionKey);
+    deposit.status = 'paid';
+    delete global.pendingDeposits[uniqueCode];
+    db.run('DELETE FROM pending_deposits WHERE unique_code = ?', [uniqueCode]);
+
+    const notificationSent = await sendPaymentSuccessNotification(
+      deposit.userId,
+      deposit,
+      user.saldo
+    );
+
+    if (!notificationSent) {
+      logger.warn(`Notifikasi pembayaran user ${deposit.userId} gagal dikirim, tapi saldo sudah masuk.`);
+    }
+
+    if (deposit.qrMessageId) {
+      try {
+        await bot.telegram.deleteMessage(deposit.chatId || deposit.userId, deposit.qrMessageId);
+      } catch (e) {
+        logger.error("Gagal menghapus pesan QR code:", e.message);
+      }
+    }
+
+    try {
+      let userInfo;
+      try {
+        userInfo = await bot.telegram.getChat(deposit.userId);
+      } catch (e) {
+        userInfo = {};
+      }
+      const username = userInfo.username ? `@${userInfo.username}` : (userInfo.first_name || deposit.userId);
+      const userDisplay = userInfo.username
+        ? `${username} (${deposit.userId})`
+        : `${username}`;
+      await bot.telegram.sendMessage(
+        GROUP_ID,
+        `<blockquote>
+✅ <b>Top Up Berhasil</b>
+👤 User: ${userDisplay}
+💰 Nominal: <b>Rp ${deposit.originalAmount}</b>
+💳 Saldo Sekarang: <b>Rp ${user.saldo}</b>
+⏰ Waktu: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}
+</blockquote>`,
+        { parse_mode: 'HTML' }
+      );
+    } catch (e) {
+      logger.error('Gagal kirim notif top up ke grup:', e.message);
+    }
+
+    try {
+      const receiptsDir = path.join(__dirname, 'receipts');
+      if (fs.existsSync(receiptsDir)) {
+        const files = fs.readdirSync(receiptsDir);
+        for (const file of files) {
+          fs.unlinkSync(path.join(receiptsDir, file));
+        }
+      }
+    } catch (e) {
+      logger.error('Gagal menghapus file di receipts:', e.message);
+    }
+
+    return true;
+  } catch (error) {
+    deposit.status = 'pending';
+    try {
+      await dbRunAsync('ROLLBACK');
+    } catch {}
+    logger.error('Error processing payment match:', error.message);
+    throw error;
   }
 }
 
@@ -4380,8 +4649,6 @@ async function processMatchingPayment(deposit, matchingTransaction, uniqueCode) 
     });
   });
 }
-
-setInterval(checkQRISStatus, 10000);
 
 async function recordAccountTransaction(userId, type) {
   return new Promise((resolve, reject) => {
