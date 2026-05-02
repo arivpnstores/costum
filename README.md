@@ -8,6 +8,10 @@ echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
 echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.conf
 sysctl -p
 ```
+LIMIT BW 30TB
+```bash
+bash <(curl -s https://raw.githubusercontent.com/arivpnstores/costum/main/limit-leaseweb30TB.sh)
+```
 LOCKING DNS + IPV4 ONLY
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/arivpnstores/costum/main/set-ipv4-dns.sh)
