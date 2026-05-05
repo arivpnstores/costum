@@ -19,8 +19,8 @@ cat > /usr/local/bin/limit_traffic.sh << 'EOF'
 #!/bin/bash
 INTERFACE=$(ip route | grep default | awk '{print $5}' | head -n1)
 
-LIMIT_DOWNLOAD=10000
-LIMIT_UPLOAD=5000
+LIMIT_DOWNLOAD=100000
+LIMIT_UPLOAD=100000
 THRESHOLD=900
 MAX_DAILY=1000
 
