@@ -3,46 +3,49 @@ DNS SET + IPV4 ONLY LANGSUNG
 ```bash
 #!/bin/bash
 
-echo "🚀 SETUP DNS + DISABLE IPV6"
+echo "🚀 NETWORK OPTIMIZATION"
 
-# ================= UNLOCK =================
+# Unlock
 chattr -i /etc/resolv.conf 2>/dev/null
-chattr -i /etc/sysctl.conf 2>/dev/null
-
-# ================= DISABLE SYSTEMD RESOLVED =================
-systemctl stop systemd-resolved 2>/dev/null
-systemctl disable systemd-resolved 2>/dev/null
-
-rm -f /etc/resolv.conf
 
 # ================= DNS =================
 cat <<EOF > /etc/resolv.conf
 nameserver 1.1.1.1
-nameserver 8.8.8.8
-options timeout:1
-options attempts:2
+nameserver 1.0.0.1
+options edns0
+options single-request-reopen
+timeout:2
+attempts:3
 EOF
 
-echo "✅ DNS UPDATED"
+# ================= SYSCTL =================
+cat <<EOF > /etc/sysctl.d/99-network.conf
 
-# ================= DISABLE IPV6 =================
-cat <<EOF > /etc/sysctl.d/99-disable-ipv6.conf
-net.ipv6.conf.all.disable_ipv6 = 1
-net.ipv6.conf.default.disable_ipv6 = 1
-net.ipv6.conf.lo.disable_ipv6 = 1
+# BBR
+net.core.default_qdisc=fq
+net.ipv4.tcp_congestion_control=bbr
+
+# Faster TCP
+net.ipv4.tcp_fastopen=3
+net.ipv4.tcp_slow_start_after_idle=0
+net.ipv4.tcp_low_latency=1
+
+# Queue
+net.core.somaxconn=65535
+net.ipv4.tcp_max_syn_backlog=8192
+
+# Port Range
+net.ipv4.ip_local_port_range=1024 65535
+
+# Reuse
+net.ipv4.tcp_tw_reuse=1
+net.ipv4.tcp_fin_timeout=15
+
 EOF
 
-# Apply sysctl
 sysctl --system > /dev/null 2>&1
 
-echo "✅ IPV6 DISABLED"
-
-# ================= LOCK DNS =================
-chattr +i /etc/resolv.conf 2>/dev/null || true
-
-echo "🔒 DNS LOCKED"
-
-echo "🔥 DONE! VPS IPv4 ONLY + STABLE DNS"
+echo "✅ DONE"
 ```
 LOCKING DNS + IPV4 ONLY
 ```bash
