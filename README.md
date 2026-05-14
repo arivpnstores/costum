@@ -7,6 +7,7 @@ echo "🚀 SETUP DNS + DISABLE IPV6"
 
 # ================= UNLOCK =================
 chattr -i /etc/resolv.conf 2>/dev/null
+chattr -i /etc/sysctl.conf 2>/dev/null
 
 # ================= DISABLE SYSTEMD RESOLVED =================
 systemctl stop systemd-resolved 2>/dev/null
