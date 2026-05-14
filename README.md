@@ -3,49 +3,49 @@ DNS SET + IPV4 ONLY LANGSUNG
 ```bash
 #!/bin/bash
 
-echo "🚀 NETWORK OPTIMIZATION"
+echo "🚀 RESET + SET DNS + DISABLE IPV6"
 
-# Unlock
+# ================= UNLOCK =================
 chattr -i /etc/resolv.conf 2>/dev/null
+chattr -i /etc/sysctl.conf 2>/dev/null
+
+# ================= RESET OLD CONFIG =================
+sed -i '/disable_ipv6/d' /etc/sysctl.conf
+sed -i '/tcp_congestion_control/d' /etc/sysctl.conf
+sed -i '/default_qdisc/d' /etc/sysctl.conf
+
+rm -f /etc/resolv.conf
 
 # ================= DNS =================
 cat <<EOF > /etc/resolv.conf
 nameserver 1.1.1.1
-nameserver 1.0.0.1
-options edns0
-options single-request-reopen
-timeout:2
-attempts:3
+nameserver 8.8.8.8
+nameserver 9.9.9.9
 EOF
 
-# ================= SYSCTL =================
-cat <<EOF > /etc/sysctl.d/99-network.conf
+echo "✅ DNS UPDATED"
 
-# BBR
-net.core.default_qdisc=fq
-net.ipv4.tcp_congestion_control=bbr
+# ================= DISABLE IPV6 =================
+cat <<EOF >> /etc/sysctl.conf
 
-# Faster TCP
-net.ipv4.tcp_fastopen=3
-net.ipv4.tcp_slow_start_after_idle=0
-net.ipv4.tcp_low_latency=1
-
-# Queue
-net.core.somaxconn=65535
-net.ipv4.tcp_max_syn_backlog=8192
-
-# Port Range
-net.ipv4.ip_local_port_range=1024 65535
-
-# Reuse
-net.ipv4.tcp_tw_reuse=1
-net.ipv4.tcp_fin_timeout=15
+# DISABLE IPV6
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
 
 EOF
 
-sysctl --system > /dev/null 2>&1
+# ================= APPLY =================
+sysctl -p > /dev/null 2>&1
 
-echo "✅ DONE"
+echo "✅ IPV6 DISABLED"
+
+# ================= LOCK =================
+chattr +i /etc/resolv.conf 2>/dev/null || true
+chattr +i /etc/sysctl.conf 2>/dev/null || true
+
+echo "🔒 LOCKED"
+
+echo "🔥 DONE! CLEAN CONFIG + FAST DNS"
 ```
 LOCKING DNS + IPV4 ONLY
 ```bash
