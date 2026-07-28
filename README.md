@@ -37,14 +37,6 @@ EOF
 # ================= APPLY =================
 sysctl -p > /dev/null 2>&1
 
-echo "✅ IPV6 DISABLED"
-
-# ================= LOCK =================
-chattr +i /etc/resolv.conf 2>/dev/null || true
-chattr +i /etc/sysctl.conf 2>/dev/null || true
-
-echo "🔒 LOCKED"
-
 echo "🔥 DONE! CLEAN CONFIG + FAST DNS"
 ```
 LOCKING DNS + IPV4 ONLY
